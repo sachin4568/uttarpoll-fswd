@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int           @id @default(autoincrement())
+  name              String
+  email             String        @unique
+  passwordHash      String
+  phone             String?       @unique
+  address           String?
+  dob               DateTime?
+  occupation        String?
+  aadhaar           String?       @unique
+  isProfileComplete Boolean       @default(false)
+  walletBalance     Float         @default(0)
+  totalEarnings     Float         @default(0)
+  payoutUPI         String?
+  createdAt         DateTime      @default(now())
+  ridesOffered      Ride[]        @relation("HostRides")
+  bookings          Booking[]
+  transactions      Transaction[]
+}
+
+
+model Ride {
+  id             Int       @id @default(autoincrement())
+  hostId         Int
+  fromLocation   String
+  toLocation     String
+  departureTime  DateTime
+  price          Float
+  capacity       Int
+  checkpoints    String[]
+  specifications String[]
+  status         String    @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  isEmergency    Boolean   @default(false)
+  sosTriggeredBy Int?
+  host           User      @relation("HostRides", fields: [hostId], references: [id])
+  bookings       Booking[]
+  createdAt      DateTime  @default(now())
+}
+
+
+
+model Booking {
+  id              Int      @id @default(autoincrement())
+  rideId          Int
+  passengerId     Int
+  seatsRequested  Int      @default(1)
+  pickupLocation  String   @default("Not specified")
+  paymentMethod   String   @default("ONLINE") // ONLINE, CASH
+  status          String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, PAID
+  ride            Ride     @relation(fields: [rideId], references: [id])
+  passenger       User     @relation(fields: [passengerId], references: [id])
+  createdAt       DateTime @default(now())
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  amount    Float
+  type      String   // CREDIT (Earnings), DEBIT (Withdrawal)
+  status    String   // COMPLETED, PENDING, FAILED
+  reference String?  // Ride ID or Payout Reference
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+

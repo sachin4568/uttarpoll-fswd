@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Feather icons for premium modern iconography -->
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./dashboard.css">
+    <title>Uttarpool | Himalayan Carpooling</title>
+    <!-- Modern Typography & Razorpay -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="container nav-content">
+        <div class="nav-left">
+          <div class="logo">
+            <i data-feather="map"></i>
+          </div>
+          <div class="nav-links">
+            <a href="#" class="active">Dashboard</a>
+            <a href="#">My Rides</a>
+            <a href="#">History</a>
+            <a href="#">Transactions</a>
+          </div>
+        </div>
+        <div class="user-profile">
+          <button id="theme-toggle" class="btn-icon theme-btn" title="Toggle Theme"><i data-feather="moon"></i></button>
+          <div class="avatar-container" id="profile-trigger" onclick="window.openProfileSidebar()" style="cursor: pointer; position: relative; background: var(--color-primary); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 101; pointer-events: auto;">
+            <i data-feather="user" style="width: 18px; height: 18px;"></i>
+            <div id="profile-dot" class="notification-dot" style="display: none;"></div>
+          </div>
+        </div>
+        <!-- Mobile Menu Toggle -->
+        <button class="menu-toggle"><i data-feather="menu"></i></button>
+      </div>
+    </nav>
+
+    <!-- Global Notifications -->
+    <div id="profile-warning" class="status-banner" style="display: none; background: var(--color-warning); color: #000; text-align: center; padding: 0.5rem; font-size: 0.875rem; font-weight: 500;">
+      <i data-feather="alert-circle" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
+      Please complete your profile to enable ride booking and offering. 
+      <a href="#" onclick="window.openProfileModal()" style="text-decoration: underline; margin-left: 0.5rem;">Complete Now</a>
+    </div>
+
+    <!-- Profile Sidebar -->
+    <div id="profile-sidebar" class="sidebar-overlay" style="display: none;">
+      <div class="sidebar-content glass-card">
+        <div class="sidebar-header">
+          <h3>My Profile</h3>
+          <button class="btn-icon" onclick="window.closeProfileSidebar()"><i data-feather="x"></i></button>
+        </div>
+        <div class="sidebar-body">
+          <div class="profile-summary">
+            <div id="sidebar-avatar-placeholder" class="avatar-large" style="background: var(--color-primary); color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+              <i data-feather="user" style="width: 40px; height: 40px;"></i>
+            </div>
+            <h4 id="sidebar-name">User Name</h4>
+            <p id="sidebar-email" class="text-muted">user@example.com</p>
+            <div id="profile-status-badge" class="badge">Incomplete</div>
+          </div>
+          
+          <div class="sidebar-actions" style="margin-top: 2rem;">
+            <button class="btn-text" onclick="window.openProfileModal()" style="width: 100%; justify-content: flex-start; margin-bottom: 1rem;">
+              <i data-feather="edit-3"></i> Edit Details
+            </button>
+            <button class="btn-text" style="width: 100%; justify-content: flex-start; margin-bottom: 1rem; color: var(--color-danger);" id="btn-logout-sidebar">
+              <i data-feather="log-out"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complete Profile Modal -->
+    <div id="profile-modal" class="modal-overlay" style="display: none;">
+      <div class="glass-card modal-box" style="width: 90%; max-width: 600px; padding: 2.5rem;">
+        <h2 style="margin-bottom: 0.5rem;">Complete Your Profile</h2>
+        <p class="text-muted" style="margin-bottom: 2rem;">Required for identity verification and safety</p>
+        
+        <form id="profile-form" class="form-layout" style="padding: 0;">
+          <div class="form-row">
+            <div class="input-group half-width">
+              <label>Full Name</label>
+              <input type="text" id="p-name" placeholder="John Doe" required>
+            </div>
+            <div class="input-group half-width">
+              <label>Phone Number</label>
+              <input type="tel" id="p-phone" placeholder="+91 98765 43210" required>
+            </div>
+          </div>
+          
+          <div class="input-group">
+            <label>Physical Address</label>
+            <textarea id="p-address" placeholder="Room/Flat No, Street, Landmark, City, State, PIN" rows="2" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border);" required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="input-group half-width">
+              <label>Date of Birth</label>
+              <input type="date" id="p-dob" required>
+            </div>
+            <div class="input-group half-width">
+              <label>Occupation</label>
+              <input type="text" id="p-occupation" placeholder="Student / Professional" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Aadhaar Number (12 digits)</label>
+            <input type="text" id="p-aadhaar" placeholder="1234 5678 9012" pattern="\d{12}" title="Please enter 12 digit Aadhaar number" required>
+          </div>
+
+          <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button type="button" class="btn-outline" onclick="window.closeProfileModal()" style="flex: 1;">Cancel</button>
+            <button type="submit" class="btn-primary" style="flex: 2;">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container main-dashboard">
+      <!-- Auth View -->
+      <div id="auth-view" style="display: none; max-width: 400px; margin: 4rem auto; text-align: left;">
+        <div class="glass-card" style="padding: 2.5rem;">
+          <h2 style="margin-bottom: 0.5rem;" id="auth-title">Welcome Back</h2>
+          <p class="text-muted" style="margin-bottom: 2rem;" id="auth-subtitle">Sign in to continue your journey.</p>
+          
+          <form id="auth-form">
+            <div class="input-group" id="name-group" style="display: none;">
+              <label>Full Name</label>
+              <input type="text" id="auth-name" placeholder="John Doe">
+            </div>
+            
+            <div class="input-group">
+              <label>Email Address</label>
+              <input type="email" id="auth-email" placeholder="explorer@himalayas.com" required>
+            </div>
+            
+            <div class="input-group mt-3">
+              <label>Password</label>
+              <input type="password" id="auth-password" placeholder="••••••••" required>
+            </div>
+            
+            <button type="submit" class="btn-primary mt-4" style="width: 100%; justify-content: center;" id="auth-submit-btn">Login <i data-feather="log-in"></i></button>
+          </form>
+          
+          <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem;">
+            <span class="text-muted" id="auth-toggle-text">Don't have an account?</span>
+            <a href="#" id="auth-toggle-btn" style="color: var(--color-primary); font-weight: 600; text-decoration: none;">Sign Up</a>
+          </div>
+        </div>
+      </div>
+      <div id="home-view">
+        <header class="dashboard-header">
+        <div>
+          <p class="greeting text-muted">Good Morning, Explorer!</p>
+          <h1>Where are you heading today?</h1>
+        </div>
+      </header>
+
+      <!-- Action Cards -->
+      <div class="actions-grid">
+        <div class="glass-card action-card" id="take-ride-card">
+          <div class="icon-wrapper take-icon">
+            <i data-feather="navigation"></i>
+          </div>
+          <div class="card-text">
+            <h3>Take a Ride</h3>
+            <p class="text-muted">Find a comfortable ride to your destination in the hills.</p>
+          </div>
+          <button class="btn-primary mt-auto">Search Rides <i data-feather="arrow-right"></i></button>
+        </div>
+
+        <div class="glass-card action-card" id="offer-ride-card">
+          <div class="icon-wrapper offer-icon">
+            <i data-feather="key"></i>
+          </div>
+          <div class="card-text">
+            <h3>Offer a Ride</h3>
+            <p class="text-muted">Heading out? Share your empty seats and split the cost.</p>
+          </div>
+          <button class="btn-outline mt-auto">Publish Ride <i data-feather="plus"></i></button>
+        </div>
+      </div>
+
+      <!-- Recent Rides Section -->
+      <section class="recent-rides">
+        <div class="section-header">
+          <h2>Active Rides</h2>
+          <a href="#" id="overview-view-all" class="view-all text-muted">View all <i data-feather="chevron-right"></i></a>
+        </div>
+        <div class="rides-list" id="rides-list">
+          <!-- Populated by JavaScript -->
+        </div>
+      </section>
+      </div>
+
+      <!-- My Rides View -->
+      <div id="my-rides-view" style="display: none;">
+        <header class="dashboard-header view-header">
+          <div>
+            <p class="greeting text-muted">Your Scheduled Journeys</p>
+            <h1 style="margin-top: 0;">My Rides</h1>
+          </div>
+        </header>
+        <div class="glass-card" style="padding: 2rem;">
+          <div id="host-rides-container" class="rides-list">
+            <!-- Populated by JS -->
+            <div style="text-align: center;"><i data-feather="loader" class="spin"></i> Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History View -->
+      <div id="history-view" style="display: none;">
+        <header class="dashboard-header view-header">
+          <div>
+            <p class="greeting text-muted">Past Journeys</p>
+            <h1 style="margin-top: 0;">Ride History</h1>
+          </div>
+        </header>
+        <div class="glass-card" style="padding: 2rem;">
+          <div id="passenger-history-container" class="rides-list">
+            <!-- Populated by JS -->
+            <div style="text-align: center;"><i data-feather="loader" class="spin"></i> Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wallet & Transactions View -->
+      <div id="transactions-view" style="display: none;">
+        <header class="dashboard-header view-header">
+          <div>
+            <p class="greeting text-muted">Manage your earnings</p>
+            <h1 style="margin-top: 0;">Earnings & Wallet</h1>
+          </div>
+        </header>
+        
+        <div class="form-row" style="margin-bottom: 2rem;">
+          <div class="glass-card half-width" style="padding: 2rem; display: flex; flex-direction: column; gap: 0.5rem; background: linear-gradient(135deg, var(--color-primary), #15803d);">
+            <div style="color: rgba(255,255,255,0.8); font-size: 0.875rem; font-weight: 500;">AVAILABLE BALANCE</div>
+            <div id="wallet-balance" style="font-size: 2.5rem; font-weight: 800; color: #fff; font-family: 'Outfit';">₹0.00</div>
+            <button class="btn-primary" onclick="window.requestWithdrawal()" style="background: #fff; color: var(--color-primary); margin-top: 1rem; width: fit-content; padding: 0.75rem 1.5rem;">Withdraw Funds</button>
+          </div>
+          
+          <div class="glass-card half-width" style="padding: 2rem; display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid var(--color-border);">
+            <div class="text-muted" style="font-size: 0.875rem; font-weight: 500;">TOTAL LIFETIME EARNINGS</div>
+            <div id="wallet-total" style="font-size: 2rem; font-weight: 700; color: var(--color-text-main); font-family: 'Outfit';">₹0.00</div>
+            <div style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span id="payout-status-text" class="text-muted" style="font-size: 0.85rem;">Payouts: <b id="wallet-upi">Not set</b></span>
+              <button class="btn-text" onclick="window.openPayoutSetup()" style="font-size: 0.85rem; color: var(--color-primary); font-weight: 600;">Edit UPI</button>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="section-title" style="margin-bottom: 1rem;">Transaction History</h3>
+        <div class="glass-card" style="padding: 1rem;">
+          <div id="wallet-transactions-list" style="display: flex; flex-direction: column; gap: 0.8rem;">
+            <div style="text-align: center; padding: 2rem; color: var(--color-text-muted);">No history available.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Publish Ride View -->
+      <div id="publish-view" style="display: none;">
+        <header class="dashboard-header view-header" style="display: flex; gap: 1rem; align-items: center;">
+          <button class="btn-icon" id="back-to-dashboard" title="Back"><i data-feather="arrow-left"></i></button>
+          <div>
+            <p class="greeting text-muted">Share your journey</p>
+            <h1 style="margin-top: 0;">Offer a Ride</h1>
+          </div>
+        </header>
+
+        <form id="publish-ride-form" class="glass-card form-layout">
+          <!-- Route Section -->
+          <div class="form-section">
+            <h3 class="section-title"><i data-feather="map" class="text-primary" style="color: var(--color-primary)"></i> Route Details</h3>
+            <div class="route-builder">
+              <div class="input-group">
+                <label>From</label>
+                <div class="input-with-icon">
+                  <i data-feather="circle" style="color: var(--color-primary); width: 1rem; height: 1rem;"></i>
+                  <input type="text" id="route-from" placeholder="E.g., Dehradun" required>
+                </div>
+              </div>
+              
+              <div id="checkpoints-container" class="checkpoints-container">
+                <!-- Checkpoints go here -->
+              </div>
+              
+              <button type="button" class="btn-text add-checkpoint-btn mt-2" id="add-checkpoint-btn" style="display: flex; align-items: center; gap: 0.5rem; color: var(--color-text-muted); font-weight: 500;">
+                <i data-feather="plus-circle" style="width: 1rem; height: 1rem;"></i> Add intermediate stop
+              </button>
+              
+              <div class="input-group mt-3">
+                <label>To</label>
+                <div class="input-with-icon">
+                  <i data-feather="map-pin" style="color: var(--color-danger); width: 1rem; height: 1rem;"></i>
+                  <input type="text" id="route-to" placeholder="E.g., Mussoorie" required>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule & Capacity -->
+          <div class="form-row">
+            <div class="form-section half-width">
+              <h3 class="section-title"><i data-feather="calendar" class="text-primary" style="color: var(--color-primary)"></i> Schedule</h3>
+              <div class="input-group">
+                <label>Departure Time</label>
+                <input type="datetime-local" id="ride-datetime" required>
+              </div>
+            </div>
+            
+            <div class="form-section half-width">
+              <h3 class="section-title"><i data-feather="users" class="text-primary" style="color: var(--color-primary)"></i> Capacity & Price</h3>
+              <div class="input-group">
+                <label>Available Seats</label>
+                <div class="stepper" style="display: flex; align-items: center; gap: 1rem; background: var(--color-bg); padding: 0.25rem; border-radius: var(--radius-full); width: fit-content;">
+                  <button type="button" class="btn-icon step-btn" id="decrease-seats"><i data-feather="minus"></i></button>
+                  <span id="seat-count" style="font-weight: 600; font-size: 1.2rem; width: 1.5rem; text-align: center;">3</span>
+                  <button type="button" class="btn-icon step-btn" id="increase-seats"><i data-feather="plus"></i></button>
+                </div>
+              </div>
+              
+              <div class="input-group mt-3">
+                <label>Price per Seat (₹)</label>
+                <input type="number" id="ride-price" placeholder="150" required min="0">
+              </div>
+            </div>
+          </div>
+
+          <!-- Specifications -->
+          <div class="form-section">
+            <h3 class="section-title"><i data-feather="list" class="text-primary" style="color: var(--color-primary)"></i> Specifications</h3>
+            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0.5rem;">Type a specification and press Enter (e.g. 'No Smoking', 'Large Luggage')</p>
+            
+            <div class="input-group">
+              <input type="text" id="spec-input" placeholder="Add specification...">
+            </div>
+            <div class="specs-chips mt-2" id="specs-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <!-- Chips go here -->
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div class="form-actions mt-4" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);">
+            <button type="button" class="btn-outline" id="cancel-publish">Cancel</button>
+            <button type="submit" class="btn-primary" id="publish-submit-btn">Publish Ride <i data-feather="check"></i></button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Search View -->
+      <div id="search-view" style="display: none;">
+        <header class="dashboard-header view-header" style="display: flex; gap: 1rem; align-items: center; justify-content: space-between;">
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <button class="btn-icon" id="back-from-search" title="Back"><i data-feather="arrow-left"></i></button>
+            <div>
+              <p class="greeting text-muted">Find a Journey</p>
+              <h1 style="margin-top: 0;">Search Rides</h1>
+            </div>
+          </div>
+        </header>
+
+        <div class="glass-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+            <div class="input-group" style="margin: 0;">
+              <label>From</label>
+              <div class="input-with-icon">
+                <i data-feather="circle" style="color: var(--color-primary); width: 1rem; height: 1rem;"></i>
+                <input type="text" id="search-from" placeholder="Source">
+              </div>
+            </div>
+            <div class="input-group" style="margin: 0;">
+              <label>To</label>
+              <div class="input-with-icon">
+                <i data-feather="map-pin" style="color: var(--color-danger); width: 1rem; height: 1rem;"></i>
+                <input type="text" id="search-to" placeholder="Destination">
+              </div>
+            </div>
+            <div class="input-group" style="margin: 0;">
+              <label>Date</label>
+              <div class="input-with-icon">
+                <i data-feather="calendar" style="color: var(--color-text-muted); width: 1rem; height: 1rem;"></i>
+                <input type="date" id="search-date">
+              </div>
+            </div>
+            <button class="btn-primary" id="search-btn" style="height: 42px; padding: 0 1.5rem;">Search</button>
+          </div>
+        </div>
+
+        <section class="search-results">
+          <div class="section-header">
+            <h2>Available Rides</h2>
+            <span class="text-muted" id="search-results-count">0 rides found</span>
+          </div>
+          <div class="rides-list" id="search-results-list">
+            <!-- Populated by JavaScript -->
+          </div>
+        </section>
+      </div>
+
+      <!-- Ride Details View -->
+      <div id="ride-details-view" style="display: none;">
+        <header class="dashboard-header view-header" style="display: flex; gap: 1rem; align-items: center;">
+          <button class="btn-icon" id="back-from-details" title="Back"><i data-feather="arrow-left"></i></button>
+          <div>
+            <p class="greeting text-muted">Ride Details</p>
+            <h1 style="margin-top: 0;" id="details-driver-name">Driver's Ride</h1>
+          </div>
+        </header>
+
+        <div class="glass-card" style="padding: 2rem;">
+          <!-- Driver Info Banner -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <img src="https://ui-avatars.com/api/?name=Driver&background=0f172a&color=fff" id="details-driver-avatar" alt="Driver Profile" class="avatar" style="width: 3.5rem; height: 3.5rem;">
+              <div>
+                <h3 id="details-driver-title" style="margin-bottom: 0.25rem;">Driver Name</h3>
+                <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.875rem; color: var(--color-text-muted);">
+                  <i data-feather="star" style="width: 14px; height: 14px; color: var(--color-warning);"></i> 4.8 (120 rides)
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div id="details-price" style="font-size: 1.5rem; font-weight: 700; color: var(--color-primary);">₹0</div>
+              <div class="text-muted" style="font-size: 0.875rem;">per seat</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <!-- Timeline Section -->
+            <div class="form-section half-width">
+              <h3 class="section-title"><i data-feather="map" class="text-primary" style="color: var(--color-primary)"></i> Progressive Route</h3>
+              <div id="details-timeline" class="vertical-timeline" style="margin-top: 1rem;">
+                <!-- Timeline items populated by JS -->
+              </div>
+            </div>
+
+            <!-- Details Section -->
+            <div class="form-section half-width">
+              <h3 class="section-title"><i data-feather="info" class="text-primary" style="color: var(--color-primary)"></i> Trip Information</h3>
+              
+              <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                  <div class="icon-wrapper" style="width: 2.5rem; height: 2.5rem; background: rgba(245, 158, 11, 0.1); color: var(--color-warning); border-radius: var(--radius-md);">
+                    <i data-feather="calendar" style="width: 1.25rem;"></i>
+                  </div>
+                  <div>
+                    <div class="text-muted" style="font-size: 0.875rem;">Departure</div>
+                    <div style="font-weight: 500;" id="details-date">Date Time</div>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                  <div class="icon-wrapper" style="width: 2.5rem; height: 2.5rem; background: rgba(16, 185, 129, 0.1); color: var(--color-success); border-radius: var(--radius-md);">
+                    <i data-feather="users" style="width: 1.25rem;"></i>
+                  </div>
+                  <div>
+                    <div class="text-muted" style="font-size: 0.875rem;">Capacity</div>
+                    <div style="font-weight: 500;" id="details-seats">X seats available</div>
+                  </div>
+                </div>
+              </div>
+
+              <h3 class="section-title" style="margin-top: 2rem;"><i data-feather="list" class="text-primary" style="color: var(--color-primary)"></i> Specifications</h3>
+              <div id="details-specs" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
+                <!-- Spec chips populated by JS -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- Host Managing Section -->
+          <div id="host-manage-section" style="margin-top: 3rem; display: none;">
+            <h3 class="section-title"><i data-feather="users" class="text-primary" style="color: var(--color-primary)"></i> Passenger Requests</h3>
+            <div id="ride-specific-requests" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+              <!-- Individual passenger requests will be listed here -->
+            </div>
+          </div>
+          <!-- Action Bar -->
+          <div class="ride-details-actions">
+            <div class="action-left">
+              <button id="btn-sos" class="btn-outline btn-danger-soft">
+                <i data-feather="alert-triangle"></i> Emergency SOS
+              </button>
+            </div>
+            <div class="action-right">
+              <button id="btn-pay" class="btn-outline">Pay Online <i data-feather="credit-card"></i></button>
+              <button id="btn-book" class="btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem; box-shadow: 0 10px 25px rgba(21, 128, 61, 0.4);">
+                Request to Book <i data-feather="check-circle"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert" class="modal-overlay" style="display: none; z-index: 10001;">
+      <div class="glass-card alert-box" style="text-align: center;">
+        <div id="alert-icon-wrapper" class="icon-wrapper" style="margin: 0 auto 1rem; width: 3rem; height: 3rem;">
+          <i id="alert-icon" data-feather="check-circle"></i>
+        </div>
+        <h3 id="alert-title">Success!</h3>
+        <p id="alert-message" class="text-muted" style="margin-top: 0.5rem;"></p>
+        <button class="btn-primary mt-4" onclick="window.closeAlert()" style="width: 100%; justify-content: center;">OK</button>
+      </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="custom-confirm" class="modal-overlay" style="display: none; z-index: 10002;">
+      <div class="glass-card alert-box" style="text-align: center;">
+        <div class="icon-wrapper" style="margin: 0 auto 1.5rem; width: 3rem; height: 3rem; color: var(--color-warning);">
+          <i data-feather="help-circle"></i>
+        </div>
+        <h3 id="confirm-title">Are you sure?</h3>
+        <p id="confirm-message" class="text-muted" style="margin: 0.5rem 0 2rem;"></p>
+        <div style="display: flex; gap: 1rem;">
+          <button class="btn-outline" id="confirm-cancel-btn" style="flex: 1; justify-content: center;">Cancel</button>
+          <button class="btn-primary" id="confirm-ok-btn" style="flex: 1; justify-content: center; background: var(--color-danger); border-color: var(--color-danger);">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking Request Modal -->
+    <div id="booking-modal" class="modal-overlay" style="display: none;">
+      <div class="glass-card booking-box" style="width: 90%; max-width: 450px; padding: 2.5rem;">
+        <h3 style="margin-bottom: 0.5rem;">Request Booking</h3>
+        <p class="text-muted" style="margin-bottom: 2rem;">Confirm your trip preferences</p>
+        
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Number of Seats</span>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="window.updateBookingSeats(-1)"><i data-feather="minus"></i></button>
+              <span id="booking-seats-count" style="font-weight: 600; width: 2rem; text-align: center;">1</span>
+              <button type="button" class="stepper-btn" onclick="window.updateBookingSeats(1)"><i data-feather="plus"></i></button>
+            </div>
+          </label>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label>Your Pickup Point</label>
+          <input type="text" id="booking-pickup" placeholder="e.g. Near Mall Road post office" style="width: 100%; margin-top: 0.5rem;" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label>Payment Method</label>
+          <div style="display: flex; gap: 0.8rem; margin-top: 0.5rem;">
+            <label class="glass-card" style="flex: 1; padding: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; border: 2px solid var(--color-primary); background: rgba(21, 128, 61, 0.05);" id="pm-online">
+              <input type="radio" name="payment-method" value="ONLINE" checked style="display: none;">
+              <i data-feather="credit-card" style="width: 16px;"></i> <span>Pay Online</span>
+            </label>
+            <label class="glass-card" style="flex: 1; padding: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--color-border);" id="pm-cash">
+              <input type="radio" name="payment-method" value="CASH" style="display: none;">
+              <i data-feather="dollar-sign" style="width: 16px;"></i> <span>Cash/Direct</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="booking-price-breakdown" class="glass-card" style="background: rgba(0,0,0,0.02); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.5rem;">
+            <span class="text-muted">Ride Subtotal</span>
+            <span id="breakdown-subtotal">₹0.00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--color-success);">
+            <span>Platform & Safety Fee</span>
+            <span id="breakdown-fee">₹0.00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 1.1rem; border-top: 1px solid var(--color-border); padding-top: 0.5rem; margin-top: 0.5rem;">
+            <span>Total Payable</span>
+            <span id="breakdown-total">₹0.00</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+          <button class="btn-outline" onclick="window.closeBookingModal()" style="flex: 1;">Cancel</button>
+          <button id="confirm-booking-btn" class="btn-primary" style="flex: 2;">Confirm Request</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment QR Modal -->
+    <div id="qr-modal" class="modal-overlay" style="display: none;">
+      <div class="glass-card alert-box" style="text-align: center; max-width: 400px; padding: 3rem;">
+        <h3 id="qr-title">Scan to Pay Driver</h3>
+        <p class="text-muted" style="margin-bottom: 2rem;">Direct Transfer via UPI</p>
+        
+        <div id="qr-container" style="background: #fff; padding: 1.5rem; border-radius: var(--radius-md); margin: 0 auto 2rem; width: fit-content; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+          <!-- QR Image inserted by JS -->
+          <div style="width: 200px; height: 200px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center;">
+            <i data-feather="loader" class="spin"></i>
+          </div>
+        </div>
+
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--color-primary); margin-bottom: 0.5rem;" id="qr-amount">₹0.00</div>
+        <div class="text-muted" style="font-size: 0.85rem; margin-bottom: 2rem;">Payout UPI ID: <b id="qr-upi">rahul@oksbi</b></div>
+
+        <button class="btn-primary w-full" onclick="window.closeQRModal()">Close QR</button>
+      </div>
+    </div>
+
+    <script src="./payments.js"></script>
+    <script type="module" src="./main.js"></script>
+    <script>
+      feather.replace()
+    </script>
+  </body>
+</html>
