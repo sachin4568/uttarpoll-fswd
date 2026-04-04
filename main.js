@@ -306,20 +306,24 @@ function checkAuth() {
   const token = localStorage.getItem('auth_token');
   const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
   const authView = document.getElementById('auth-view');
+  const homeView = document.getElementById('home-view');
   const mainDashboard = document.querySelector('.main-dashboard');
   const userProfile = document.querySelector('.user-profile');
   const profileWarning = document.getElementById('profile-warning');
 
+  // Always keep main-dashboard visible (auth-view is inside it)
+  if (mainDashboard) mainDashboard.style.display = 'block';
+
   if (!token) {
     if (authView) authView.style.display = 'block';
-    if (mainDashboard) mainDashboard.style.display = 'none';
+    if (homeView) homeView.style.display = 'none';
     if (userProfile) userProfile.style.display = 'none';
     if (profileWarning) profileWarning.style.display = 'none';
     window.currentUser = null;
   } else {
     window.currentUser = user;
     if (authView) authView.style.display = 'none';
-    if (mainDashboard) mainDashboard.style.display = 'block';
+    if (homeView) homeView.style.display = 'block';
     if (userProfile) userProfile.style.display = 'flex';
     
     // Update profile info
