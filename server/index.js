@@ -25,7 +25,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Auth scaffolding -> Auth Implementation
@@ -445,7 +445,7 @@ app.get('/api/bookings/passenger', auth, async (req, res) => {
     const bookings = await prisma.booking.findMany({
       where: { passengerId: req.user.userId },
       include: {
-        ride: { include: { host: { select: { name: true, upiId: true } } } }
+        ride: { include: { host: { select: { name: true, payoutUPI: true } } } }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -465,7 +465,7 @@ app.get('/api/wallet', auth, async (req, res) => {
     res.json({
       balance: user.walletBalance,
       totalEarnings: user.totalEarnings,
-      upiId: user.payoutUPI || user.upiId,
+      upiId: user.payoutUPI,
       transactions: user.transactions
     });
   } catch (err) {
@@ -480,7 +480,7 @@ app.post('/api/wallet/payout-setup', auth, async (req, res) => {
     
     await prisma.user.update({
       where: { id: req.user.userId },
-      data: { payoutUPI: upiId, upiId: upiId }
+      data: { payoutUPI: upiId }
     });
     res.json({ success: true });
   } catch (err) {
