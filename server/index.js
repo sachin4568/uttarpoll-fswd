@@ -5,7 +5,13 @@ const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_0hceLgMOCKk6@ep-steep-wildflower-a17jub65-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require',
+    },
+  },
+});
 const app = express();
 const Razorpay = require('razorpay');
 
@@ -22,9 +28,16 @@ try {
 app.use(cors());
 app.use(express.json());
 
-// Basic health check
+// Debug health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+  const dbUrl = process.env.DATABASE_URL || '';
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date(),
+    dbUrlExists: !!process.env.DATABASE_URL,
+    dbUrlStartsWith: dbUrl.substring(0, 15),
+    nodeEnv: process.env.NODE_ENV
+  });
 });
 
 const bcrypt = require('bcryptjs');
