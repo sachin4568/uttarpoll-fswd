@@ -778,6 +778,8 @@ function setupSearchWorkflow() {
 
 // Navigation setup (relying on centralized setupInteractions)
 
+let isRegistering = false;
+
 function setupAuth() {
   const authToggleBtn = document.getElementById('auth-toggle-btn');
   const authToggleText = document.getElementById('auth-toggle-text');
