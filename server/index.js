@@ -67,6 +67,19 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.get('/api/auth/me', async (req, res) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+  try {
+    const verified = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const user = await prisma.user.findUnique({ where: { id: verified.userId } });
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    res.json({ id: user.id, name: user.name, email: user.email, isProfileComplete: user.isProfileComplete });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
 // Middleware to protect routes
 const auth = async (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
