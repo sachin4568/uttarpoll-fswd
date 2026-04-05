@@ -314,14 +314,13 @@
   animation: spin 1s linear infinite;
 }
 
-/* Custom Alert Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -425,14 +424,13 @@
   }
 }
 
-/* Profile Sidebar */
 .sidebar-overlay {
   position: fixed;
   top: 0;
   right: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   z-index: 1000;
   display: flex;
   justify-content: flex-end;
@@ -549,5 +547,32 @@
   
   .ride-status {
     align-self: flex-start;
+  }
+}
+
+/* Responsive Search Grid */
+.search-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+@media (max-width: 768px) {
+  .search-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .search-form-grid .btn-primary {
+    width: 100%;
+    height: 3.5rem !important;
+    margin-top: 0.5rem;
+  }
+  
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
   }
 }

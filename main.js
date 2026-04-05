@@ -1518,6 +1518,12 @@ window.addEventListener('click', (e) => {
     if (id === 'payout-modal') {
       if (typeof window.closePayoutModal === 'function') window.closePayoutModal();
     }
+    if (id === 'custom-alert') {
+      if (typeof window.closeAlert === 'function') window.closeAlert();
+    }
+    if (id === 'custom-confirm') {
+      if (typeof window.closeConfirm === 'function') window.closeConfirm();
+    }
   }
   if (e.target.classList.contains('sidebar-overlay')) {
     if (e.target.id === 'profile-sidebar') {
