@@ -1,5 +1,16 @@
 
 // Payment, Wallet, and QR Logic for Uttarpool
+window.handleAuthError = function(res) {
+  if (res.status === 401) {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    window.showAlert('Session expired. Please log in again.', 'warning');
+    setTimeout(() => window.location.reload(), 2000);
+    return true;
+  }
+  return false;
+};
+
 window.showWallet = async function() {
   window.hideAllViews();
   const view = document.getElementById('transactions-view');
@@ -20,6 +31,9 @@ window.showWallet = async function() {
     const res = await fetch('/api/wallet', {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('auth_token') }
     });
+    
+    if (window.handleAuthError(res)) return;
+    
     const data = await res.json();
 
     if (res.ok) {
@@ -60,24 +74,60 @@ window.showWallet = async function() {
 };
 
 window.openPayoutSetup = function() {
-  const upi = prompt('Enter your UPI ID (GPay, PhonePe, Paytm, etc.):');
-  if (!upi) return;
+  const modal = document.getElementById('payout-modal');
+  const upiInput = document.getElementById('p-upi-id');
+  const currentUPI = document.getElementById('wallet-upi').innerText;
   
-  fetch('/api/wallet/payout-setup', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
-    },
-    body: JSON.stringify({ upiId: upi })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      window.showAlert('Payout UPI saved!', 'success');
+  if (modal && upiInput) {
+    upiInput.value = currentUPI === 'Not set' ? '' : currentUPI;
+    modal.style.display = 'flex';
+  }
+};
+
+window.closePayoutModal = function() {
+  const modal = document.getElementById('payout-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.savePayoutUPI = async function() {
+  const upi = document.getElementById('p-upi-id').value.trim();
+  const btn = document.getElementById('btn-save-upi');
+  
+  if (!upi) return window.showAlert('Please enter a valid UPI ID', 'error');
+  if (!upi.includes('@')) return window.showAlert('Invalid UPI ID format', 'error');
+
+  const originalText = btn.innerText;
+  btn.innerText = 'Saving...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/wallet/payout-setup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+      },
+      body: JSON.stringify({ upiId: upi })
+    });
+    
+    if (window.handleAuthError(res)) return;
+
+    const data = await res.json();
+    if (res.ok) {
+      window.showAlert('Payout UPI saved successfully!', 'success');
+      const upiEl = document.getElementById('wallet-upi');
+      if (upiEl) upiEl.innerText = upi;
+      window.closePayoutModal();
       window.showWallet();
+    } else {
+      window.showAlert(data.error || 'Failed to save UPI', 'error');
     }
-  });
+  } catch (err) {
+    window.showAlert('Network error saving UPI', 'error');
+  } finally {
+    btn.innerText = originalText;
+    btn.disabled = false;
+  }
 };
 
 window.requestWithdrawal = function() {
@@ -166,6 +216,9 @@ window.initiatePayment = async function(bookingId) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('auth_token') },
       body: JSON.stringify({ bookingId })
     });
+    
+    if (window.handleAuthError(res)) return;
+    
     const order = await res.json();
     if (!res.ok) throw new Error(order.error);
 

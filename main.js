@@ -89,6 +89,44 @@ window.closeConfirm = function() {
   if (modal) modal.style.display = 'none';
 };
 
+window.handleAuthError = function(res) {
+  if (res.status === 401) {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    window.showAlert('Session expired. Please log in again.', 'warning');
+    setTimeout(() => window.location.reload(), 2000);
+    return true;
+  }
+  return false;
+};
+
+window.hideAllViews = function() {
+  const views = [
+    'auth-view', 'home-view', 'my-rides-view', 'history-view', 
+    'transactions-view', 'publish-view', 'search-view', 'ride-details-view'
+  ];
+  views.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+};
+
+window.showDashboard = function() {
+  window.hideAllViews();
+  const homeView = document.getElementById('home-view');
+  if (homeView) homeView.style.display = 'block';
+  
+  // Refresh data
+  renderRecentRides();
+  
+  // Reset nav links
+  const navLinks = document.querySelectorAll('.nav-links a');
+  navLinks.forEach((l, i) => {
+    if (i === 0) l.classList.add('active');
+    else l.classList.remove('active');
+  });
+};
+
 window.triggerSOS = function(rideId) {
   window.showConfirm({
     title: 'EMERGENCY SOS',
@@ -143,6 +181,9 @@ async function renderRecentRides() {
     const res = await fetch('/api/rides', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
     });
+
+    if (window.handleAuthError(res)) return;
+
     const rides = await res.json();
     
     if (!res.ok || rides.length === 0) {
@@ -282,6 +323,8 @@ function setupInteractions() {
           body: JSON.stringify(data)
         });
 
+        if (window.handleAuthError(res)) return;
+
         if (res.ok) {
           const result = await res.json();
           // Update local user state
@@ -406,6 +449,8 @@ window.requireProfile = function() {
           })
         });
         
+        if (window.handleAuthError(res)) return;
+
         if (res.ok) {
           window.closeBookingModal();
           window.showAlert('Booking Request Sent to Driver!', 'success');
@@ -470,7 +515,9 @@ function setupPublishWorkflow() {
     window.showDashboard();
   }
 
-  if (offerRideBtn) offerRideBtn.addEventListener('click', showPublishForm);
+  if (offerRideBtn) offerRideBtn.addEventListener('click', () => {
+    if (window.requireProfile()) showPublishForm();
+  });
   if (backBtn) backBtn.addEventListener('click', hidePublishForm);
   if (cancelBtn) cancelBtn.addEventListener('click', hidePublishForm);
 
@@ -589,8 +636,12 @@ function setupPublishWorkflow() {
       e.preventDefault();
       if (!window.requireProfile()) return;
 
-      const submitBtn = document.getElementById('btn-publish');
-      const originalText = submitBtn.innerHTML;
+      const submitBtn = document.getElementById('publish-submit-btn');
+      if (!submitBtn) {
+        console.error('Submit button not found');
+        return;
+      }
+      const originalHtml = submitBtn.innerHTML;
       submitBtn.disabled = true;
       submitBtn.innerHTML = 'Publishing... <i data-feather="loader" class="spin"></i>';
       feather.replace();
@@ -615,15 +666,29 @@ function setupPublishWorkflow() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`
           },
           body: JSON.stringify(payload)
         });
 
+        if (window.handleAuthError(res)) return;
+
         if (res.ok) {
           window.showAlert("Ride published successfully!", "success");
           publishForm.reset();
-// ... (trimmed for chunk safety)
+          publishState.checkpoints = [];
+          publishState.specifications = [];
+          publishState.seats = 3;
+          
+          const seatCountEl = document.getElementById('seat-count');
+          if (seatCountEl) seatCountEl.innerText = '3';
+          
+          // Re-render empty states
+          const cpContainer = document.getElementById('checkpoints-container');
+          const specContainer = document.getElementById('specs-container');
+          if (cpContainer) cpContainer.innerHTML = '';
+          if (specContainer) specContainer.innerHTML = '';
+          
           hidePublishForm();
         } else {
           const data = await res.json();
@@ -632,8 +697,10 @@ function setupPublishWorkflow() {
       } catch (err) {
         window.showAlert("Server error connecting to backend.", "error");
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHtml;
+        }
         feather.replace();
       }
     });
@@ -1160,7 +1227,7 @@ window.showHistory = async function() {
   }
 };
 
-window.showTransactions = function() {
+window.showWallet = function() {
   window.hideAllViews();
   document.getElementById('transactions-view').style.display = 'block';
   window.scrollTo(0, 0);

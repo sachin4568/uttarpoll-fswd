@@ -1,17 +1,10 @@
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
-}
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_0hceLgMOCKk6@ep-steep-wildflower-a17jub65-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require',
-    },
-  },
-});
+const prisma = new PrismaClient();
 const app = express();
 const Razorpay = require('razorpay');
 
@@ -110,7 +103,7 @@ const auth = async (req, res, next) => {
     
     next();
   } catch (err) {
-    res.status(400).json({ error: 'Invalid token' });
+    res.status(401).json({ error: 'Invalid token' });
   }
 };
 
