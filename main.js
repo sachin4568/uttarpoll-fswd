@@ -1502,3 +1502,27 @@ window.showRideDetails = function(ride) {
 
   window.scrollTo(0, 0);
 };
+
+// Universal outside click to close modals
+window.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal-overlay')) {
+    const id = e.target.id;
+    if (id === 'profile-modal') window.closeProfileModal();
+    if (id === 'publish-ride-modal') window.hidePublishForm();
+    if (id === 'booking-modal') {
+      if (typeof window.closeBookingModal === 'function') window.closeBookingModal();
+    }
+    if (id === 'qr-modal') {
+      if (typeof window.closeQRModal === 'function') window.closeQRModal();
+    }
+    if (id === 'payout-modal') {
+      if (typeof window.closePayoutModal === 'function') window.closePayoutModal();
+    }
+  }
+  if (e.target.classList.contains('sidebar-overlay')) {
+    if (e.target.id === 'profile-sidebar') {
+      if (typeof window.closeProfileSidebar === 'function') window.closeProfileSidebar();
+    }
+  }
+});
+
