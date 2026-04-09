@@ -207,13 +207,44 @@
         <header class="dashboard-header view-header">
           <div>
             <p class="greeting text-muted">Your Scheduled Journeys</p>
-            <h1 style="margin-top: 0;">My Rides</h1>
+            <h1 style="margin-top: 0;">My Rides & Requests</h1>
           </div>
         </header>
-        <div class="glass-card" style="padding: 2rem;">
-          <div id="host-rides-container" class="rides-list">
+
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="window.switchMyRidesTab('hosting')">
+            <i data-feather="key"></i> Hosting Hub
+          </button>
+          <button class="tab-btn" onclick="window.switchMyRidesTab('joined')">
+            <i data-feather="navigation"></i> Joined Hub
+          </button>
+        </div>
+
+        <!-- Global My Rides Stats -->
+        <div class="hub-stats-row animate-fade-in-up">
+          <div class="stat-card">
+            <span class="label">Active Journeys</span>
+            <span class="value" id="stats-active-rides">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="label">Total Bookings</span>
+            <span class="value" id="stats-total-bookings">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="label">Wallet Balance</span>
+            <span class="value" id="stats-wallet-balance">₹0.00</span>
+          </div>
+        </div>
+
+        <div id="my-rides-hosting-content">
+          <div id="host-rides-container" class="bento-grid">
             <!-- Populated by JS -->
-            <div style="text-align: center;"><i data-feather="loader" class="spin"></i> Loading...</div>
+          </div>
+        </div>
+
+        <div id="my-rides-joined-content" style="display: none;">
+          <div id="passenger-rides-container" class="bento-grid">
+            <!-- Populated by JS -->
           </div>
         </div>
       </div>
@@ -226,10 +257,41 @@
             <h1 style="margin-top: 0;">Ride History</h1>
           </div>
         </header>
-        <div class="glass-card" style="padding: 2rem;">
-          <div id="passenger-history-container" class="rides-list">
+
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="window.switchHistoryTab('hosted')">
+            <i data-feather="archive"></i> Hosted History
+          </button>
+          <button class="tab-btn" onclick="window.switchHistoryTab('joined')">
+            <i data-feather="clock"></i> Joined History
+          </button>
+        </div>
+
+        <!-- History Hub Stats -->
+        <div class="hub-stats-row animate-fade-in-up">
+          <div class="stat-card">
+            <span class="label">Hosted Trips</span>
+            <span class="value" id="stats-hosted-count">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="label">Joined Trips</span>
+            <span class="value" id="stats-joined-count">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="label">Community Impact</span>
+            <span class="value" id="stats-impact">Gold</span>
+          </div>
+        </div>
+
+        <div id="history-hosted-content">
+          <div id="hosted-history-container" class="bento-grid">
             <!-- Populated by JS -->
-            <div style="text-align: center;"><i data-feather="loader" class="spin"></i> Loading...</div>
+          </div>
+        </div>
+
+        <div id="history-joined-content" style="display: none;">
+          <div id="joined-history-container" class="bento-grid">
+            <!-- Populated by JS -->
           </div>
         </div>
       </div>

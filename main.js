@@ -1001,231 +1001,408 @@ window.endRide = function(rideId) {
   });
 };
 
-window.showMyRides = async function() {
+window.showMyRides = async function(activeTab = 'hosting') {
   window.hideAllViews();
   const view = document.getElementById('my-rides-view');
   view.style.display = 'block';
   window.scrollTo(0, 0);
 
+  // Initialize tabs if not already set correctly
+  window.switchMyRidesTab(activeTab);
+};
+
+window.switchMyRidesTab = async function(tab) {
+  const isHosting = tab === 'hosting';
+  const hostingContent = document.getElementById('my-rides-hosting-content');
+  const joinedContent = document.getElementById('my-rides-joined-content');
+  const hostContainer = document.getElementById('host-rides-container');
+  const passengerContainer = document.getElementById('passenger-rides-container');
+  const tabs = document.querySelectorAll('#my-rides-view .tab-btn');
+
+  // Update Tab Buttons
+  tabs.forEach(btn => {
+    if ((isHosting && btn.innerText.includes('Hosting')) || (!isHosting && btn.innerText.includes('Joined'))) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Toggle Visibility
+  hostingContent.style.display = isHosting ? 'block' : 'none';
+  joinedContent.style.display = isHosting ? 'none' : 'block';
+
+  if (isHosting) renderHostingRides();
+  else renderJoinedRequests();
+};
+
+async function renderHostingRides() {
   const container = document.getElementById('host-rides-container');
-  if (!container) return;
+  container.innerHTML = '<div style="text-align: center; padding: 2rem; grid-column: 1/-1;"><i data-feather="loader" class="spin"></i> Loading...</div>';
+  feather.replace();
 
   try {
-    // Fetch Host's own rides to show "End Ride" button
     const ridesRes = await fetch('/api/rides', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
     });
-    const allRides = await ridesRes.json();
-    const userStr = localStorage.getItem('auth_user');
-    const userObj = userStr ? JSON.parse(userStr) : {};
+    let allRides = await ridesRes.json();
+    if (!Array.isArray(allRides)) allRides = [];
+
+    const userObj = window.currentUser || JSON.parse(localStorage.getItem('auth_user') || '{}');
     const myActiveRides = allRides.filter(r => r.hostId === userObj.id);
 
-    let html = '<h3>Active Published Rides</h3>';
-    if (myActiveRides.length === 0) {
-      html += '<p class="text-muted" style="margin-bottom: 2rem;">No active published rides.</p>';
-    } else {
-      html += '<div class="rides-grid" style="margin-bottom: 2rem; grid-template-columns: 1fr;">';
-      myActiveRides.forEach(ride => {
-        html += `
-          <div class="glass-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; border-left: 4px solid ${ride.isEmergency ? 'var(--color-danger)' : 'var(--color-primary)'}">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <div style="font-weight: 600; font-size: 1.1rem;">${ride.fromLocation} → ${ride.toLocation}</div>
-                <div class="text-muted" style="font-size: 0.85rem;">Published on ${new Date(ride.createdAt).toLocaleDateString()}</div>
-                ${ride.isEmergency ? '<div style="color: var(--color-danger); font-weight: 700; font-size: 0.85rem; margin-top: 0.5rem;"><i data-feather="alert-triangle" style="width:14px;"></i> EMERGENCY ACTIVE</div>' : ''}
-              </div>
-              <div style="display: flex; gap: 0.5rem;">
-                <button class="btn-outline" style="color: var(--color-danger); border-color: var(--color-danger);" onclick="window.triggerSOS(${ride.id})">
-                  <i data-feather="alert-triangle" style="width: 14px;"></i> SOS
-                </button>
-                <button class="btn-primary" style="background: var(--color-danger); border-color: var(--color-danger);" onclick="window.endRide(${ride.id})">
-                  <i data-feather="check-circle" style="width: 14px;"></i> End Ride
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      });
-      html += '</div>';
-    }
-
-    html += '<h3 style="margin-top: 2rem;">Incoming Booking Requests</h3>';
-    
     const bookingsRes = await fetch('/api/bookings/host', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
     });
-    const bookings = await bookingsRes.json();
+    let allBookings = await bookingsRes.json();
+    if (!Array.isArray(allBookings)) allBookings = [];
 
-    if (!bookingsRes.ok || bookings.length === 0) {
-      html += '<p class="text-muted">No incoming requests yet.</p>';
-      container.innerHTML = html;
-      if (typeof feather !== 'undefined') feather.replace();
+    // Update Stats
+    document.getElementById('stats-active-rides').innerText = myActiveRides.length;
+    document.getElementById('stats-total-bookings').innerText = allBookings.length;
+    fetch('/api/wallet', { headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('stats-wallet-balance').innerText = `₹${data.balance || '0.00'}`;
+      });
+
+    if (myActiveRides.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state animate-fade-in-up" style="grid-column: 1/-1;">
+          <i data-feather="map"></i>
+          <div>
+            <h3>No Active Rides</h3>
+            <p>You haven't published any rides yet. Share a journey to start hosting!</p>
+          </div>
+          <button class="btn-primary" onclick="window.showDashboard(); document.querySelector('#offer-ride-card button').click()">Publish a Ride</button>
+        </div>
+      `;
+      feather.replace();
       return;
     }
 
-    container.innerHTML = html;
-    bookings.forEach(b => {
-      container.innerHTML += `
-        <div class="ride-item" style="flex-direction: column; align-items: stretch; gap: 1rem;">
-          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
-            <div>
-              <div style="font-weight: 600; font-size: 1.1rem;">${b.ride.fromLocation} <i data-feather="arrow-right"></i> ${b.ride.toLocation}</div>
-              <div class="text-muted" style="font-size: 0.875rem;">Status: <span style="text-transform: uppercase; font-weight: 600; color: ${b.status === 'PENDING' ? 'var(--color-warning)' : (b.status === 'REJECTED' ? 'var(--color-danger)' : 'var(--color-success)')}">${b.status}</span></div>
-            </div>
+    container.innerHTML = '';
+    myActiveRides.forEach((ride, index) => {
+      const rideBookings = allBookings.filter(b => b.rideId === ride.id);
+      const pendingCount = rideBookings.filter(b => b.status === 'PENDING').length;
+      
+      const rideEl = document.createElement('div');
+      rideEl.className = 'ticket-card animate-fade-in-up';
+      rideEl.style.animationDelay = `${index * 0.1}s`;
+
+      rideEl.innerHTML = `
+        <div class="ticket-top">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+            <span class="badge" style="background:${ride.isEmergency ? 'var(--status-rejected-bg)' : 'var(--status-accepted-bg)'}; color:${ride.isEmergency ? 'var(--status-rejected)' : 'var(--status-accepted)'}; border:none;">
+              ${ride.isEmergency ? 'EMERGENCY' : 'ACTIVE'}
+            </span>
             <div style="text-align: right;">
-              <div style="font-weight: 600;">₹${b.ride.price}</div>
-              <div class="text-muted" style="font-size: 0.75rem; font-weight: 700; color: var(--color-primary);">${b.paymentMethod || 'ONLINE'}</div>
+              <div style="font-weight: 800; font-size: 1.25rem; color: var(--color-primary); font-family: 'Outfit';">₹${ride.price}</div>
+              <div style="font-size: 0.7rem; color: var(--color-text-muted); text-transform: uppercase;">Per Seat</div>
             </div>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <div style="font-size: 0.875rem; color: var(--color-text-main); font-weight: 500;">
-              <i data-feather="user" style="width: 14px;"></i> Passenger: <b>${b.passenger.name}</b>
+
+          <div style="display: flex; gap: 1.5rem; align-items: center;">
+            <div class="route-dot-line">
+              <div class="dot"></div>
+              <div class="line"></div>
+              <div class="dot" style="background: var(--color-danger);"></div>
             </div>
-            <div style="font-size: 0.875rem; color: var(--color-primary); font-weight: 500;">
-              <i data-feather="users" style="width: 14px;"></i> ${b.seatsRequested} seats | <i data-feather="map-pin" style="width: 14px;"></i> Pickup: <b>${b.pickupLocation}</b>
+            <div style="flex: 1;">
+              <div style="margin-bottom: 1.25rem;">
+                <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">Origin</div>
+                <div style="font-weight: 700; font-size: 1.1rem;">${ride.fromLocation}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">Destination</div>
+                <div style="font-weight: 700; font-size: 1.1rem;">${ride.toLocation}</div>
+              </div>
             </div>
           </div>
-          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
-            ${b.status === 'PENDING' ? `
-              <button class="btn-outline" onclick="window.updateBooking(${b.id}, 'REJECTED')" style="color: var(--color-danger); border-color: rgba(239,68,68,0.5);">Reject</button>
-              <button class="btn-primary" onclick="window.updateBooking(${b.id}, 'ACCEPTED')">Accept</button>
-            ` : `
-              ${b.status === 'ACCEPTED' && b.paymentMethod === 'CASH' ? `
-                <button class="btn-outline" onclick="window.showPaymentQR(${b.ride.price * b.seatsRequested}, \`${currentUser.upiId || ''}\`, \`${currentUser.name}\`)" style="color: var(--color-primary); border-color: var(--color-primary);">
-                  <i data-feather="maximize" style="width: 14px;"></i> Show Payment QR
-                </button>
-              ` : ''}
-              ${b.status === 'PAID' ? '<span style="color: var(--color-success); font-weight: 700; font-size: 0.85rem;"><i data-feather="check-circle" style="width:14px;"></i> PAID ONLINE</span>' : ''}
-            `}
+        </div>
+
+        <div class="ticket-bottom">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div class="ride-meta">
+              <span class="meta-item"><i data-feather="calendar" style="width:14px;"></i> ${new Date(ride.departureTime).toLocaleDateString()}</span>
+              <span class="meta-item"><i data-feather="users" style="width:14px;"></i> ${ride.capacity} Left</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn-icon" onclick="window.triggerSOS(${ride.id})" style="color:var(--color-danger); background:var(--status-rejected-bg);"><i data-feather="alert-triangle"></i></button>
+              <button class="btn-primary" onclick="window.endRide(${ride.id})" style="background:var(--color-danger); padding:0.4rem 0.8rem; font-size:0.8rem;">End</button>
+            </div>
+          </div>
+          
+          <div style="border-top: 1px solid var(--color-border); padding-top: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+               <span style="font-size: 0.8rem; font-weight: 600; color: var(--color-text-muted);">PASSENGERS</span>
+               ${pendingCount > 0 ? `<span class="badge" style="background:var(--status-pending-bg); color:var(--status-pending); border:none; font-size:0.65rem;">${pendingCount} NEW</span>` : ''}
+            </div>
+            <div class="rides-list" style="gap: 0.5rem;">
+               ${rideBookings.length === 0 ? '<p class="text-muted" style="font-size: 0.75rem;">Waiting for requests...</p>' : ''}
+               ${rideBookings.slice(0, 3).map(b => `
+                 <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.03); padding:0.4rem 0.75rem; border-radius:var(--radius-md); font-size:0.85rem;">
+                    <span><b>${b.passenger.name}</b> (${b.seatsRequested})</span>
+                    <button class="btn-text" style="padding:0; color:var(--color-primary);" onclick="window.showMyRides()">Manage <i data-feather="chevron-right" style="width:12px;"></i></button>
+                 </div>
+               `).join('')}
+            </div>
           </div>
         </div>
       `;
+
+      container.appendChild(rideEl);
     });
 
-    // Fetch Joined/Accepted Rides for Passenger
-    html += '<h3 style="margin-top: 3rem;">Rides You Joined</h3>';
-    const passengerRes = await fetch('/api/bookings/passenger', {
+    feather.replace();
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><i data-feather="alert-circle"></i><h3>Unable to load hub</h3></div>';
+    feather.replace();
+  }
+}
+
+async function renderJoinedRequests() {
+  const container = document.getElementById('passenger-rides-container');
+  container.innerHTML = '<div style="text-align: center; padding: 2rem; grid-column: 1/-1;"><i data-feather="loader" class="spin"></i> Loading...</div>';
+  feather.replace();
+
+  try {
+    const res = await fetch('/api/bookings/passenger', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
     });
-    const passengerBookings = await passengerRes.json();
-    const activeJoined = passengerBookings.filter(b => b.status === 'ACCEPTED' && b.ride.status === 'ACTIVE');
+    let bookings = await res.json();
+    if (!Array.isArray(bookings)) bookings = [];
 
-    if (activeJoined.length === 0) {
-      html += '<p class="text-muted">No active joined rides.</p>';
-    } else {
-      activeJoined.forEach(b => {
-        html += `
-          <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1rem; border-left: 4px solid var(--color-success); display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-weight: 600; font-size: 1.1rem;">${b.ride.fromLocation} → ${b.ride.toLocation}</div>
-              <div class="text-muted" style="font-size: 0.85rem;">Host: ${b.ride.host.name} | ${new Date(b.ride.departureTime).toLocaleDateString()}</div>
-              ${b.ride.isEmergency ? '<div style="color: var(--color-danger); font-weight: 700; font-size: 0.85rem; margin-top: 0.5rem;"><i data-feather="alert-triangle" style="width:14px;"></i> EMERGENCY ACTIVE</div>' : ''}
-            </div>
-            <button class="btn-outline" style="color: var(--color-danger); border-color: var(--color-danger);" onclick="window.triggerSOS(${b.rideId})">
-               <i data-feather="alert-triangle" style="width: 14px;"></i> SOS
-            </button>
+    if (bookings.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state animate-fade-in-up" style="grid-column: 1/-1;">
+          <i data-feather="navigation"></i>
+          <div>
+            <h3>No Hub Activity</h3>
+            <p>You haven't requested any rides yet. The mountains are waiting!</p>
           </div>
-        `;
-      });
+          <button class="btn-primary" onclick="window.showSearch()">Find a Ride</button>
+        </div>
+      `;
+      feather.replace();
+      return;
     }
 
-    if (typeof feather !== 'undefined') feather.replace();
-  } catch (err) {
-    container.innerHTML = '<div style="color: var(--color-danger);">Failed to load incoming requests.</div>';
-  }
-};
+    container.innerHTML = '';
+    bookings.forEach((b, index) => {
+      const bEl = document.createElement('div');
+      bEl.className = `ticket-card animate-fade-in-up`;
+      bEl.style.animationDelay = `${index * 0.1}s`;
 
-window.updateBooking = async function(bookingId, status) {
-  try {
-    const res = await fetch(`/api/bookings/${bookingId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-      },
-      body: JSON.stringify({ status })
+      bEl.innerHTML = `
+        <div class="ticket-top">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+            <span class="badge" style="background:${getBookingStatusColor(b.status, true)}; color:${getBookingStatusColor(b.status)}; border:none;">
+              ${b.status}
+            </span>
+            <div style="text-align: right;">
+              <div style="font-weight: 800; font-size: 1.25rem; color: var(--color-primary); font-family: 'Outfit';">₹${b.ride.price * b.seatsRequested}</div>
+              <div style="font-size: 0.7rem; color: var(--color-text-muted); text-transform: uppercase;">Total for ${b.seatsRequested} Seat(s)</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 1.5rem; align-items: center;">
+            <div class="route-dot-line">
+              <div class="dot" style="background: var(--color-success)"></div>
+              <div class="line"></div>
+              <div class="dot" style="background: var(--color-danger)"></div>
+            </div>
+            <div style="flex: 1;">
+              <div style="margin-bottom: 1.25rem;">
+                <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">From</div>
+                <div style="font-weight: 700; font-size: 1.1rem;">${b.ride.fromLocation}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">To</div>
+                <div style="font-weight: 700; font-size: 1.1rem;">${b.ride.toLocation}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ticket-bottom">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="ride-meta">
+              <span class="meta-item"><i data-feather="user"></i> ${b.ride.host.name}</span>
+              <span class="meta-item"><i data-feather="calendar"></i> ${new Date(b.ride.departureTime).toLocaleDateString()}</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              ${b.status === 'ACCEPTED' && b.paymentMethod === 'ONLINE' ? `
+                <button class="btn-primary" onclick="window.initiatePayment(${b.id})" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Pay <i data-feather="credit-card" style="width:12px;"></i></button>
+              ` : ''}
+              ${b.ride.status === 'ACTIVE' && b.status === 'ACCEPTED' ? `
+                <button class="btn-icon" onclick="window.triggerSOS(${b.rideId})" style="color:var(--color-danger); background:var(--status-rejected-bg);"><i data-feather="alert-triangle"></i></button>
+              ` : ''}
+            </div>
+          </div>
+          <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 4px;">
+             <i data-feather="map-pin" style="width:12px;"></i> Pickup: <b>${b.pickupLocation}</b>
+          </div>
+        </div>
+      `;
+      container.appendChild(bEl);
     });
-    if (res.ok) {
-      window.showAlert(`Booking ${status}!`, "success");
-      window.showMyRides();
-    } else {
-      window.showAlert("Failed to update booking status.", "error");
-    }
-  } catch (err) {
-    window.showAlert("Server error.", "error");
-  }
-};
 
-window.showHistory = async function() {
+    feather.replace();
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><i data-feather="alert-circle"></i><h3>Unable to load hub</h3></div>';
+    feather.replace();
+  }
+}
+
+function getBookingStatusColor(status, isBg = false) {
+  switch(status) {
+    case 'PENDING': return isBg ? 'var(--status-pending-bg)' : 'var(--status-pending)';
+    case 'ACCEPTED': return isBg ? 'var(--status-accepted-bg)' : 'var(--status-accepted)';
+    case 'REJECTED': return isBg ? 'var(--status-rejected-bg)' : 'var(--status-rejected)';
+    case 'PAID': return isBg ? 'var(--status-paid-bg)' : 'var(--status-paid)';
+    default: return isBg ? 'rgba(0,0,0,0.05)' : 'var(--color-text-muted)';
+  }
+}
+
+window.showHistory = async function(activeTab = 'hosted') {
   window.hideAllViews();
   const view = document.getElementById('history-view');
   view.style.display = 'block';
   window.scrollTo(0, 0);
 
-  const container = document.getElementById('passenger-history-container');
-  if (!container) return;
+  window.switchHistoryTab(activeTab);
+};
 
-  container.innerHTML = '<div style="text-align: center; padding: 2rem;"><i data-feather="loader" class="spin"></i> Loading history...</div>';
+window.switchHistoryTab = async function(tab) {
+  const isHosted = tab === 'hosted';
+  const hostedContent = document.getElementById('history-hosted-content');
+  const joinedContent = document.getElementById('history-joined-content');
+  const tabs = document.querySelectorAll('#history-view .tab-btn');
+
+  tabs.forEach(btn => {
+    if ((isHosted && btn.innerText.includes('Hosted')) || (!isHosted && btn.innerText.includes('Joined'))) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  hostedContent.style.display = isHosted ? 'block' : 'none';
+  joinedContent.style.display = isHosted ? 'none' : 'block';
+
+  if (isHosted) renderHostedHistory();
+  else renderJoinedHistory();
+};
+
+async function renderHostedHistory() {
+  const container = document.getElementById('hosted-history-container');
+  container.innerHTML = '<div style="text-align: center; padding: 2rem; grid-column: 1/-1;"><i data-feather="loader" class="spin"></i> Loading...</div>';
   feather.replace();
 
   try {
     const res = await fetch('/api/rides/history', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
     });
-    const { hosted, joined } = await res.json();
+    let historyJson = await res.json();
+    const hosted = Array.isArray(historyJson.hosted) ? historyJson.hosted : [];
+    const joined = Array.isArray(historyJson.joined) ? historyJson.joined : [];
 
-    let html = '';
+    // Update Stats
+    document.getElementById('stats-hosted-count').innerText = hosted.length;
+    document.getElementById('stats-joined-count').innerText = joined.length;
+    const impact = hosted.length > 5 ? 'Platinum' : (hosted.length > 2 ? 'Gold' : 'Silver');
+    document.getElementById('stats-impact').innerText = impact;
 
-    if (hosted.length === 0 && joined.length === 0) {
-      html = '<div style="text-align: center; padding: 3rem; color: var(--color-text-muted);">No completed rides found in your history.</div>';
-    } else {
-      if (hosted.length > 0) {
-        html += '<h4 style="margin-bottom: 1rem;">Trips You Hosted</h4>';
-        hosted.forEach(ride => {
-          html += `
-            <div class="ride-item" style="margin-bottom: 1.5rem; border-left: 4px solid var(--color-success);">
-              <div style="display: flex; justify-content: space-between; width: 100%;">
-                <div>
-                  <div style="font-weight: 600; font-size: 1.1rem;">${ride.fromLocation} <i data-feather="arrow-right"></i> ${ride.toLocation}</div>
-                  <div class="text-muted" style="font-size: 0.85rem;">Completed on ${new Date(ride.departureTime).toLocaleDateString()}</div>
-                </div>
-                <div style="text-align: right;">
-                  <span class="badge badge-success">COMPLETED</span>
-                  <div style="font-weight: 600; margin-top: 4px;">Earned: ₹${ride.price}</div>
-                </div>
-              </div>
-            </div>
-          `;
-        });
-      }
-
-      if (joined.length > 0) {
-        html += '<h4 style="margin-top: 2rem; margin-bottom: 1rem;">Trips You Joined</h4>';
-        joined.forEach(ride => {
-          html += `
-            <div class="ride-item" style="margin-bottom: 1.5rem; border-left: 4px solid var(--color-primary);">
-              <div style="display: flex; justify-content: space-between; width: 100%;">
-                <div>
-                  <div style="font-weight: 600; font-size: 1.1rem;">${ride.fromLocation} <i data-feather="arrow-right"></i> ${ride.toLocation}</div>
-                  <div class="text-muted" style="font-size: 0.85rem;">Host: ${ride.host.name} | ${new Date(ride.departureTime).toLocaleDateString()}</div>
-                </div>
-                <div style="text-align: right;">
-                  <span class="badge badge-success">COMPLETED</span>
-                  <div style="font-weight: 600; margin-top: 4px;">Paid: ₹${ride.price}</div>
-                </div>
-              </div>
-            </div>
-          `;
-        });
-      }
+    if (hosted.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><i data-feather="archive"></i><h3>No Hosted Trips</h3><p>Completed trips you host will appear here.</p></div>';
+      feather.replace();
+      return;
     }
 
-    container.innerHTML = html;
-    if (typeof feather !== 'undefined') feather.replace();
+    container.innerHTML = '';
+    hosted.forEach((ride, index) => {
+      const rideEl = document.createElement('div');
+      rideEl.className = 'ticket-card animate-fade-in-up';
+      rideEl.style.animationDelay = `${index * 0.05}s`;
+      
+      rideEl.innerHTML = `
+        <div class="ticket-top">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <span class="badge" style="background:var(--status-accepted-bg); color:var(--status-accepted); border:none;">COMPLETED</span>
+            <div style="text-align: right;">
+              <div style="font-weight: 800; font-size: 1.15rem; color: var(--color-primary); font-family: 'Outfit';">₹${ride.price} earned</div>
+            </div>
+          </div>
+          <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;">
+            ${ride.fromLocation} <i data-feather="arrow-right" style="width:14px;"></i> ${ride.toLocation}
+          </div>
+          <div class="text-muted" style="font-size: 0.85rem;">Date: ${new Date(ride.departureTime).toLocaleDateString()}</div>
+        </div>
+        <div class="ticket-bottom">
+           <button class="btn-text" style="width:100%; border-top: 1px solid var(--color-border); padding-top: 0.5rem; text-align:center;">View Details</button>
+        </div>
+      `;
+      container.appendChild(rideEl);
+    });
+    feather.replace();
   } catch (err) {
-    container.innerHTML = '<div style="color: var(--color-danger);">Failed to load history items.</div>';
+    container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><i data-feather="alert-circle"></i><h3>Error loading hub</h3></div>';
+    feather.replace();
   }
-};
+}
+
+async function renderJoinedHistory() {
+  const container = document.getElementById('joined-history-container');
+  container.innerHTML = '<div style="text-align: center; padding: 2rem; grid-column: 1/-1;"><i data-feather="loader" class="spin"></i> Loading...</div>';
+  feather.replace();
+
+  try {
+    const res = await fetch('/api/rides/history', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+    });
+    let historyJson = await res.json();
+    const joined = Array.isArray(historyJson.joined) ? historyJson.joined : [];
+
+    if (joined.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><i data-feather="clock"></i><h3>No Joined Trips</h3><p>Journeys you join as a passenger will appear here.</p></div>';
+      feather.replace();
+      return;
+    }
+
+    container.innerHTML = '';
+    joined.forEach((ride, index) => {
+      const rideEl = document.createElement('div');
+      rideEl.className = 'ticket-card animate-fade-in-up';
+      rideEl.style.animationDelay = `${index * 0.05}s`;
+      
+      rideEl.innerHTML = `
+        <div class="ticket-top">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <span class="badge" style="background:var(--status-accepted-bg); color:var(--status-accepted); border:none;">COMPLETED</span>
+            <div style="text-align: right;">
+              <div style="font-weight: 800; font-size: 1.15rem; color: var(--color-primary); font-family: 'Outfit';">₹${ride.price} paid</div>
+            </div>
+          </div>
+          <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;">
+            ${ride.fromLocation} <i data-feather="arrow-right" style="width:14px;"></i> ${ride.toLocation}
+          </div>
+          <div class="text-muted" style="font-size: 0.85rem;">Host: ${ride.host.name} • ${new Date(ride.departureTime).toLocaleDateString()}</div>
+        </div>
+        <div class="ticket-bottom">
+           <button class="btn-text" style="width:100%; border-top: 1px solid var(--color-border); padding-top: 0.5rem; text-align:center;">Rate Trip</button>
+        </div>
+      `;
+      container.appendChild(rideEl);
+    });
+    feather.replace();
+  } catch (err) {
+    container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><i data-feather="alert-circle"></i><h3>Error loading hub</h3></div>';
+    feather.replace();
+  }
+}
 
 window.showWallet = function() {
   window.hideAllViews();

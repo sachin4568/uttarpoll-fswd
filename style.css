@@ -58,6 +58,16 @@
   
   --bg-gradient-1: hsla(143, 62%, 20%, 1);
   --bg-gradient-2: hsla(210, 40%, 15%, 1);
+
+  /* Status Colors with alpha for glows */
+  --status-pending: #f59e0b;
+  --status-accepted: #10b981;
+  --status-rejected: #ef4444;
+  --status-paid: #3b82f6;
+  --status-pending-bg: rgba(245, 158, 11, 0.1);
+  --status-accepted-bg: rgba(16, 185, 129, 0.1);
+  --status-rejected-bg: rgba(239, 68, 68, 0.1);
+  --status-paid-bg: rgba(59, 130, 246, 0.1);
 }
 
 * {
@@ -373,4 +383,144 @@ h1, h2, h3, h4 {
 .timeline-content p {
   font-size: 0.875rem;
   color: var(--color-text-muted);
+}
+
+/* New Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+/* Layout 2.0 Hub Components */
+.hub-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  padding: 1.5rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat-card .label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  letter-spacing: 0.05em;
+}
+
+.stat-card .value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-family: 'Outfit', sans-serif;
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Ticket Card Design */
+.ticket-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-normal);
+}
+
+.ticket-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-primary);
+}
+
+.ticket-top {
+  padding: 1.5rem;
+  border-bottom: 2px dashed var(--color-border);
+  position: relative;
+}
+
+/* Perforation effect */
+.ticket-top::after, .ticket-top::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  width: 20px;
+  height: 20px;
+  background: var(--color-bg);
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  z-index: 2;
+}
+
+.ticket-top::before { left: -11px; }
+.ticket-top::after { right: -11px; }
+
+.ticket-bottom {
+  padding: 1.25rem 1.5rem;
+  background: rgba(0,0,0,0.02);
+}
+
+:root[data-theme="dark"] .ticket-bottom {
+  background: rgba(255,255,255,0.03);
+}
+
+.route-dot-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.line {
+  width: 2px;
+  height: 24px;
+  background: repeating-linear-gradient(to bottom, var(--color-border) 0, var(--color-border) 4px, transparent 4px, transparent 8px);
 }
